@@ -1,4 +1,7 @@
-use serde::de;
+use std::str::FromStr;
+
+use rust_decimal::Decimal;
+use serde::{de, Serialize};
 use serde::{Deserialize, Deserializer};
 use smol_str::{SmolStr, StrExt};
 
@@ -13,6 +16,7 @@ pub enum Transaction {
     Unknown,
 }
 
+//customer deserailizer to deserialzie each entry into the Transaction enum
 impl<'de> Deserialize<'de> for Transaction {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -20,7 +24,7 @@ impl<'de> Deserialize<'de> for Transaction {
     {
         let s = <Vec<SmolStr>>::deserialize(deserializer)?;
         let r#type = s
-            .get(0)
+            .first()
             .ok_or(serde::de::Error::custom("Cannot find type"))?
             .trim()
             .to_lowercase_smolstr();
@@ -40,9 +44,14 @@ impl<'de> Deserialize<'de> for Transaction {
             .parse()
             .map_err(de::Error::custom)?;
         tracing::info!("tx is {}", tx);
-        let amount: Option<f64> = match s.get(3) {
+        //round to 4 decimal places
+        let amount: Option<Decimal> = match s.get(3) {
             None => None,
-            Some(amount) => Some(amount.trim().parse().map_err(de::Error::custom)?),
+            Some(amount) => Some(
+                Decimal::from_str(amount.trim())
+                    .map_err(de::Error::custom)?
+                    .round_dp(4),
+            ),
         };
         tracing::info!("amount is {:?}", amount);
 
@@ -59,7 +68,7 @@ impl<'de> Deserialize<'de> for Transaction {
 }
 
 //State of the transaction. Normal is either Deposit or Withdrawl that do not have any dispute
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, PartialEq, PartialOrd)]
 pub enum TranactionState {
     Normal,
     Dispute,
@@ -72,12 +81,12 @@ pub enum TranactionState {
 pub struct TransactionDetail {
     pub client: u16,
     pub tx: u32,
-    pub amount: Option<f64>,
+    pub amount: Option<Decimal>,
     pub state: TranactionState,
 }
 
 impl TransactionDetail {
-    pub fn new(client: u16, tx: u32, amount: Option<f64>) -> Self {
+    pub fn new(client: u16, tx: u32, amount: Option<Decimal>) -> Self {
         Self {
             client,
             tx,
@@ -87,12 +96,12 @@ impl TransactionDetail {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Clone, Serialize)]
 pub struct Account {
     pub client: u16,
-    pub available: f64,
-    pub held: f64,
-    pub total: f64,
+    pub available: Decimal,
+    pub held: Decimal,
+    pub total: Decimal,
     pub locked: bool,
 }
 

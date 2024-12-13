@@ -16,6 +16,8 @@ rustc-hash = "2.1.0"
 clap = { version = "4.5.23", features = ["derive"] }
 ahash = "0.8.11"
 thiserror = "2.0.6"
+rust_decimal = "1.36.0"
+rust_decimal_macros = "1.36"
 
 [profile.release]
 codegen-units = 1

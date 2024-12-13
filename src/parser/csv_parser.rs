@@ -15,7 +15,7 @@ impl CsvParser {
     }
 
     pub async fn run(&mut self) {
-        let file = match File::open(self.path.to_owned()) {
+        let file = match File::open(&self.path) {
             Ok(f) => f,
             Err(e) => {
                 error!("Failed to open csv file: {e:?}");
