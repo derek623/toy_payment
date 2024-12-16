@@ -96,7 +96,7 @@ impl TransactionDetail {
     }
 }
 
-#[derive(Default, Clone, Serialize)]
+#[derive(Default, Clone, Serialize, Debug)]
 pub struct Account {
     pub client: u16,
     pub available: Decimal,

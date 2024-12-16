@@ -7,14 +7,16 @@ pub enum TransactionErrors {
     Deposit(DepositError),
     #[error("Withdraw error for tx {0}")]
     Withdrawal(WithdrawalError),
-    #[error("Withdraw error for tx {0}")]
+    #[error("Dispute error for tx {0}")]
     Dispute(DisputeError),
-    #[error("Withdraw error for tx {0}")]
+    #[error("Resolve error for tx {0}")]
     Resolve(ResolveError),
-    #[error("Withdraw error for tx {0}")]
+    #[error("Chargeback error for tx {0}")]
     Chargeback(ChargebackError),
     #[error("Account {0} is locked")]
     AccountLock(AccountLockError),
+    #[error("Duplicate transaction id {0}")]
+    DuplicateTransaction(DuplicateTransactionError),
 }
 
 #[derive(Debug)]
@@ -80,5 +82,16 @@ pub struct AccountLockError {
 impl fmt::Display for AccountLockError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.client)
+    }
+}
+
+#[derive(Debug)]
+pub struct DuplicateTransactionError {
+    pub tx: u32,
+}
+
+impl fmt::Display for DuplicateTransactionError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.tx)
     }
 }

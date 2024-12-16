@@ -23,8 +23,6 @@ async fn main() {
     tracing_subscriber::fmt::init();
 
     let args = Args::parse();
-
-    tracing::info!("File is {}", args.input_file);
     let (tx, rx) = mpsc::channel(CHANNEL_SIZE);
 
     let mut parser = CsvParser::new(args.input_file, tx);
