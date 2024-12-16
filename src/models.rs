@@ -28,22 +28,18 @@ impl<'de> Deserialize<'de> for Transaction {
             .ok_or(serde::de::Error::custom("Cannot find type"))?
             .trim()
             .to_lowercase_smolstr();
-        tracing::info!("Type is {}", r#type);
-
         let client: u16 = s
             .get(1)
             .ok_or(serde::de::Error::custom("Cannot find client"))?
             .trim()
             .parse()
             .map_err(de::Error::custom)?;
-        tracing::info!("client is {}", client);
         let tx: u32 = s
             .get(2)
             .ok_or(serde::de::Error::custom("Cannot find tx"))?
             .trim()
             .parse()
             .map_err(de::Error::custom)?;
-        tracing::info!("tx is {}", tx);
         //round to 4 decimal places
         let amount: Option<Decimal> = match s.get(3) {
             None => None,
@@ -53,7 +49,6 @@ impl<'de> Deserialize<'de> for Transaction {
                     .round_dp(4),
             ),
         };
-        tracing::info!("amount is {:?}", amount);
 
         let t = TransactionDetail::new(client, tx, amount);
         Ok(match r#type.as_str() {

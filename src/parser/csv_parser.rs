@@ -29,7 +29,6 @@ impl CsvParser {
         for result in rdr.deserialize::<Transaction>() {
             match result {
                 Ok(r) => {
-                    tracing::info!("Sending {r:?}");
                     if let Err(e) = self.tx.send(r).await {
                         error!("Failed to send transaction to engine: {e}");
                     }
