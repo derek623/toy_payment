@@ -12,8 +12,10 @@ use rust_decimal_macros::dec;
 use std::io::BufWriter;
 use tokio::sync::mpsc::Receiver;
 
-const TRANSACTION_MAP_SIZE: usize = 1000000;
-const ACCOUNT_MAP_SIZE: usize = 1000000;
+//This number should be set based on testing
+const TRANSACTION_MAP_SIZE: usize = u16::MAX as usize;
+//client id is u16
+const ACCOUNT_MAP_SIZE: usize = u16::MAX as usize;
 
 pub struct TransactionEngine {
     rx: Receiver<Transaction>,
