@@ -40,3 +40,8 @@ However, it sounds to me the above descriptions only apply to deposit transactio
 TESTING
 ------------------------------
 Unit tests have been implemented and sample csv files are generated for testing. I have included a few sample files in the "test_inputs" directory
+
+------------------------------
+KNOWN ISSUES/POSSIBLE IMPROVEMENTS
+------------------------------
+Because we need to handle dispute/resolve/chargeback, the transaction engine needs to store all the deposit and withdrawal transactions. The current implementation stores all the transactions in memory. However, since the transaction id is u32, the total number of records could go up to 4,294,967,296. Each transaction record is 32 bytes, so the total memory needed is around 137 GB, which is a lot. We probably need to implement a better strategy on how to store the transactions. A possible strategy is to store the most recent 10k(a configurable amount) transactions in memory, the rest go to DB. If there is a dispute on transactions that is not in memory, we need to dig it out from DB. This strategy would not work well if disputes on old tranasction are common.
