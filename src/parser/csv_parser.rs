@@ -1,4 +1,5 @@
 use crate::models::Transaction;
+use csv::{ReaderBuilder, Trim};
 use std::fs::File;
 use std::io::BufReader;
 use tokio::sync::mpsc::Sender;
@@ -25,7 +26,10 @@ impl CsvParser {
 
         //Here I just use the default 8 KB buffer. If we want to change the buffer size, we can use with_capacity instead
         let reader = BufReader::new(file);
-        let mut rdr = csv::Reader::from_reader(reader);
+        let mut rdr = ReaderBuilder::new()
+            .flexible(true)
+            .trim(Trim::All)
+            .from_reader(reader);
         for result in rdr.deserialize::<Transaction>() {
             match result {
                 Ok(r) => {
