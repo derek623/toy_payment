@@ -16,7 +16,9 @@ There are 2 main components:
 
 1) Parser, which is responsible for parsing the input csv file, normalizing each entry into an internal format and send them to the transaction engine via a mpsc channel.
 
-2) Transaction engine, which listens for incoming transactions via a mpsc channel, process them and update the accounts accordingly. It has 3 hashmaps, one that store the deposit transactions, one that stores the withdrawal transactions and one that stores the accounts. Once all the transactions are processed, it will output the account summary to stdout.
+2) Transaction engine, which listens for incoming transactions via a mpsc channel, process them and update the accounts accordingly. It has 3 hashmaps, one that store the deposit transactions, one that stores the withdrawal transactions and one that stores the accounts. Once all the transactions are processed, it will output the account summary to stdout. 
+
+Note that the transaction engine is the one that decides if the deserialized transaction is a legitimate transaction (For example, rejecting deposit transaction that doesn't have an amount as amount is an option field in the TransactionDetail struct). I believe the parser is just a parser, it shouldn't have the logic to decide if a specific transaction is formed correctly or not.
 
 ------------------------------
 Logs and errors

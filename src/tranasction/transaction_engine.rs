@@ -109,9 +109,6 @@ impl TransactionEngine {
         bail!(TransactionErrors::Deposit(DepositError {
             tx: tx_detail.tx
         },))
-        /*Err(anyhow::Error::new(TransactionErrors::Deposit(
-            DepositError { tx: tx_detail.tx },
-        )))*/
     }
 
     fn process_withdrawal(&mut self, tx_detail: TransactionDetail) -> anyhow::Result<()> {

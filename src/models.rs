@@ -6,7 +6,7 @@ use serde::{Deserialize, Deserializer};
 use smol_str::{SmolStr, StrExt};
 
 //Type of the transactions
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum Transaction {
     Deposit(TransactionDetail),
     Withdrawal(TransactionDetail),
@@ -60,7 +60,7 @@ impl<'de> Deserialize<'de> for Transaction {
 }
 
 //State of the transaction. Normal is either Deposit or Withdrawl that do not have any dispute
-#[derive(Debug, Deserialize, PartialEq, PartialOrd)]
+#[derive(Debug, Deserialize, PartialEq, Eq)]
 pub enum TranactionState {
     Normal,
     Dispute,
@@ -69,7 +69,7 @@ pub enum TranactionState {
 }
 
 //Detail of the transaction
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Eq, PartialEq)]
 pub struct TransactionDetail {
     pub client: u16,
     pub tx: u32,
@@ -103,5 +103,134 @@ impl Account {
             client,
             ..Default::default()
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::models::{
+        Transaction,
+        Transaction::{ChargeBack, Deposit, Dispute, Resolve, Unknown, Withdrawal},
+        TransactionDetail,
+    };
+    use csv::ReaderBuilder;
+    use rust_decimal_macros::dec;
+
+    #[test]
+    fn deserialize_fail() {
+        //invalid transaction type
+        let data = "\
+type,client,tx,amount
+d,0,0,1.1
+";
+
+        let mut rdr = ReaderBuilder::new()
+            .flexible(true)
+            .from_reader(data.as_bytes());
+
+        let tx = rdr.deserialize::<Transaction>().next().unwrap().unwrap();
+        assert_eq!(tx, Unknown);
+
+        //invalid number of fields
+        let data = "\
+type,client,tx,amount
+d,0
+";
+
+        let mut rdr = ReaderBuilder::new()
+            .flexible(true)
+            .from_reader(data.as_bytes());
+
+        let tx = rdr.deserialize::<Transaction>().next().unwrap();
+        assert!(tx.is_err());
+
+        //invalid header
+        let data = "\
+type,client,tx
+d,0
+";
+
+        let mut rdr = ReaderBuilder::new()
+            .flexible(true)
+            .from_reader(data.as_bytes());
+
+        let tx = rdr.deserialize::<Transaction>().next().unwrap();
+        assert!(tx.is_err());
+    }
+
+    #[test]
+    fn deserialize_deposit() {
+        let data = "\
+type,client,tx,amount
+deposit,0,0,101.111111
+";
+        let mut rdr = ReaderBuilder::new()
+            .flexible(true)
+            .from_reader(data.as_bytes());
+
+        let tx = rdr.deserialize::<Transaction>().next().unwrap().unwrap();
+        assert_eq!(
+            tx,
+            Deposit(TransactionDetail::new(0, 0, Some(dec!(101.1111))))
+        );
+    }
+
+    #[test]
+    fn deserialize_withdraw() {
+        let data = "\
+type,client,tx,amount
+withdrawal,0,0,101
+";
+        let mut rdr = ReaderBuilder::new()
+            .flexible(true)
+            .from_reader(data.as_bytes());
+
+        let tx = rdr.deserialize::<Transaction>().next().unwrap().unwrap();
+        assert_eq!(
+            tx,
+            Withdrawal(TransactionDetail::new(0, 0, Some(dec!(101))))
+        );
+    }
+
+    #[test]
+    fn deserialize_dispute() {
+        let data = "\
+type,client,tx,amount
+dispute,0,0
+";
+        let mut rdr = ReaderBuilder::new()
+            .flexible(true)
+            .from_reader(data.as_bytes());
+
+        let tx = rdr.deserialize::<Transaction>().next().unwrap().unwrap();
+        assert_eq!(tx, Dispute(TransactionDetail::new(0, 0, None)));
+    }
+
+    #[test]
+    fn deserialize_resolve() {
+        let data = "\
+type,client,tx,amount
+resolve,0,0
+";
+        let mut rdr = ReaderBuilder::new()
+            .flexible(true)
+            .from_reader(data.as_bytes());
+
+        let tx = rdr.deserialize::<Transaction>().next().unwrap().unwrap();
+        assert_eq!(tx, Resolve(TransactionDetail::new(0, 0, None)));
+    }
+
+    #[test]
+    fn deserialize_chargeback() {
+        let data = "\
+type,client,tx,amount
+chargeback,0,0
+";
+        let mut rdr = ReaderBuilder::new()
+            .flexible(true)
+            .from_reader(data.as_bytes());
+
+        let tx = rdr.deserialize::<Transaction>().next().unwrap().unwrap();
+        assert_eq!(tx, ChargeBack(TransactionDetail::new(0, 0, None)));
     }
 }
