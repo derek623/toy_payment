@@ -8,7 +8,6 @@ use crate::{
 };
 use ahash::AHashMap;
 use anyhow::bail;
-use rust_decimal_macros::dec;
 use std::io::BufWriter;
 use tokio::sync::mpsc::Receiver;
 
@@ -96,7 +95,7 @@ impl TransactionEngine {
     fn process_deposit(&mut self, tx_detail: TransactionDetail) -> anyhow::Result<()> {
         Self::check_dup_transaction_id(&self.deposit_transactions, tx_detail.tx)?;
         if let Some(amount) = tx_detail.amount {
-            if amount > dec!(0) {
+            if amount > 0.0 {
                 let account = Self::get_unlocked_account(&mut self.accounts, tx_detail.client)?;
                 account.available += amount;
                 account.total += amount;
@@ -129,7 +128,7 @@ impl TransactionEngine {
         if let Some(amount) = tx_detail.amount {
             let account = Self::get_unlocked_account(&mut self.accounts, tx_detail.client)?;
             //if the amount is > 0 and if available fund is > the withdraw amount
-            if amount > dec!(0) && account.available >= amount {
+            if amount > 0.0 && account.available >= amount {
                 account.available -= amount;
                 account.total -= amount;
                 if self

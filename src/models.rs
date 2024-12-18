@@ -1,12 +1,9 @@
-use std::str::FromStr;
-
-use rust_decimal::Decimal;
 use serde::{de, Serialize};
 use serde::{Deserialize, Deserializer};
 use smol_str::{SmolStr, StrExt};
 
 //Type of the transactions
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum Transaction {
     Deposit(TransactionDetail),
     Withdrawal(TransactionDetail),
@@ -38,11 +35,9 @@ impl<'de> Deserialize<'de> for Transaction {
             .parse()
             .map_err(de::Error::custom)?;
         //round to 4 decimal places
-        let amount: Option<Decimal> = match s.get(3) {
+        let amount: Option<f64> = match s.get(3) {
             Some(amount) if !amount.is_empty() => Some(
-                Decimal::from_str(amount)
-                    .map_err(de::Error::custom)?
-                    .round_dp(4),
+                (amount.parse::<f64>().map_err(de::Error::custom)? * 10_000.0).round() / 10_000.0,
             ),
             _ => None,
         };
@@ -69,16 +64,16 @@ pub enum TranactionState {
 }
 
 //Detail of the transaction
-#[derive(Debug, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq)]
 pub struct TransactionDetail {
     pub client: u16,
     pub tx: u32,
-    pub amount: Option<Decimal>,
+    pub amount: Option<f64>,
     pub state: TranactionState,
 }
 
 impl TransactionDetail {
-    pub fn new(client: u16, tx: u32, amount: Option<Decimal>) -> Self {
+    pub fn new(client: u16, tx: u32, amount: Option<f64>) -> Self {
         Self {
             client,
             tx,
@@ -91,9 +86,9 @@ impl TransactionDetail {
 #[derive(Default, Clone, Serialize, Debug)]
 pub struct Account {
     pub client: u16,
-    pub available: Decimal,
-    pub held: Decimal,
-    pub total: Decimal,
+    pub available: f64,
+    pub held: f64,
+    pub total: f64,
     pub locked: bool,
 }
 
@@ -114,7 +109,6 @@ mod test {
         TransactionDetail,
     };
     use csv::ReaderBuilder;
-    use rust_decimal_macros::dec;
 
     #[test]
     fn deserialize_fail() {
@@ -169,10 +163,7 @@ deposit,0,0,101.111111
             .from_reader(data.as_bytes());
 
         let tx = rdr.deserialize::<Transaction>().next().unwrap().unwrap();
-        assert_eq!(
-            tx,
-            Deposit(TransactionDetail::new(0, 0, Some(dec!(101.1111))))
-        );
+        assert_eq!(tx, Deposit(TransactionDetail::new(0, 0, Some(101.1111))));
     }
 
     #[test]
@@ -186,10 +177,7 @@ withdrawal,0,0,101
             .from_reader(data.as_bytes());
 
         let tx = rdr.deserialize::<Transaction>().next().unwrap().unwrap();
-        assert_eq!(
-            tx,
-            Withdrawal(TransactionDetail::new(0, 0, Some(dec!(101))))
-        );
+        assert_eq!(tx, Withdrawal(TransactionDetail::new(0, 0, Some(101_f64))));
     }
 
     #[test]
