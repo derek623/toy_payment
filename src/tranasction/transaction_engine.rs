@@ -94,13 +94,17 @@ impl TransactionEngine {
     }
 
     fn process_deposit(&mut self, tx_detail: TransactionDetail) -> anyhow::Result<()> {
-        let _ = Self::check_dup_transaction_id(&self.deposit_transactions, tx_detail.tx)?;
+        Self::check_dup_transaction_id(&self.deposit_transactions, tx_detail.tx)?;
         if let Some(amount) = tx_detail.amount {
             if amount > dec!(0) {
                 let account = Self::get_unlocked_account(&mut self.accounts, tx_detail.client)?;
                 account.available += amount;
                 account.total += amount;
-                if None == self.deposit_transactions.insert(tx_detail.tx, tx_detail) {
+                if self
+                    .deposit_transactions
+                    .insert(tx_detail.tx, tx_detail)
+                    .is_none()
+                {
                     //if map is full, try to resesrve additional space
                     if self.deposit_transactions.len() == self.deposit_transactions.capacity() {
                         if let Err(e) = self.deposit_transactions.try_reserve(TRANSACTION_MAP_SIZE)
@@ -121,14 +125,18 @@ impl TransactionEngine {
     }
 
     fn process_withdrawal(&mut self, tx_detail: TransactionDetail) -> anyhow::Result<()> {
-        let _ = Self::check_dup_transaction_id(&self.withdrawal_transactions, tx_detail.tx)?;
+        Self::check_dup_transaction_id(&self.withdrawal_transactions, tx_detail.tx)?;
         if let Some(amount) = tx_detail.amount {
             let account = Self::get_unlocked_account(&mut self.accounts, tx_detail.client)?;
             //if the amount is > 0 and if available fund is > the withdraw amount
             if amount > dec!(0) && account.available >= amount {
                 account.available -= amount;
                 account.total -= amount;
-                if None == self.withdrawal_transactions.insert(tx_detail.tx, tx_detail) {
+                if self
+                    .withdrawal_transactions
+                    .insert(tx_detail.tx, tx_detail)
+                    .is_none()
+                {
                     //if map is full, try to resesrve additional space
                     if self.withdrawal_transactions.len() == self.withdrawal_transactions.capacity()
                     {
