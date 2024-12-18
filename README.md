@@ -21,7 +21,7 @@ There are 2 main components:
 Note that the transaction engine is the one that decides if the deserialized transaction is a legitimate transaction (For example, rejecting deposit transaction that doesn't have an amount as amount is an option field in the TransactionDetail struct). I believe the parser is just a parser, it shouldn't have the logic to decide if a specific transaction is formed correctly or not.
 
 ------------------------------
-Logs and errors
+LOGS AND ERRORS
 ------------------------------
 All errors are logged in log file, which is generated in the "log" directory. It rolls over every hour.
 
