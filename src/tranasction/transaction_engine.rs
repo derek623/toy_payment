@@ -12,8 +12,7 @@ use rust_decimal_macros::dec;
 use std::io::BufWriter;
 use tokio::sync::mpsc::Receiver;
 
-//This number should be set based on testing
-const TRANSACTION_MAP_SIZE: usize = u16::MAX as usize;
+const TRANSACTION_MAP_SIZE: usize = 10000;
 //client id is u16
 const ACCOUNT_MAP_SIZE: usize = u16::MAX as usize;
 
@@ -101,7 +100,17 @@ impl TransactionEngine {
                 let account = Self::get_unlocked_account(&mut self.accounts, tx_detail.client)?;
                 account.available += amount;
                 account.total += amount;
-                self.deposit_transactions.insert(tx_detail.tx, tx_detail);
+                if None == self.deposit_transactions.insert(tx_detail.tx, tx_detail) {
+                    //if map is full, try to resesrve additional space
+                    if self.deposit_transactions.len() == self.deposit_transactions.capacity() {
+                        if let Err(e) = self.deposit_transactions.try_reserve(TRANSACTION_MAP_SIZE)
+                        {
+                            tracing::error!(
+                                "Fail to reserve capacity for the deposit transaction map: {e}"
+                            );
+                        }
+                    }
+                }
                 return Ok(());
             }
         }
@@ -119,7 +128,20 @@ impl TransactionEngine {
             if amount > dec!(0) && account.available >= amount {
                 account.available -= amount;
                 account.total -= amount;
-                self.withdrawal_transactions.insert(tx_detail.tx, tx_detail);
+                if None == self.withdrawal_transactions.insert(tx_detail.tx, tx_detail) {
+                    //if map is full, try to resesrve additional space
+                    if self.withdrawal_transactions.len() == self.withdrawal_transactions.capacity()
+                    {
+                        if let Err(e) = self
+                            .withdrawal_transactions
+                            .try_reserve(TRANSACTION_MAP_SIZE)
+                        {
+                            tracing::error!(
+                                "Fail to reserve capacity for the withdrawal transaction map: {e}"
+                            );
+                        }
+                    }
+                }
                 return Ok(());
             }
         }
